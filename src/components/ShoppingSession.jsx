@@ -172,18 +172,49 @@ function ShoppingSession({ items }) {
                       {formatRupiah(item.price)}
                     </p>
                   </div>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quantities[item.id] || 1}
-                    onChange={(e) => handleQtyChange(item.id, e.target.value)}
-                    disabled={!!checkedItems[item.id]}
-                    className={`w-14 border rounded-lg px-2 py-1 text-xs text-center focus:outline-none focus:ring-2 focus:ring-green-400 ${
-                      checkedItems[item.id]
-                        ? "bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed"
-                        : "border-gray-200"
-                    }`}
-                  />
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() =>
+                        handleQtyChange(
+                          item.id,
+                          Math.max(1, (parseInt(quantities[item.id]) || 1) - 1),
+                        )
+                      }
+                      disabled={!!checkedItems[item.id]}
+                      className={`w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
+                        checkedItems[item.id]
+                          ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                          : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                      }`}
+                    >
+                      −
+                    </button>
+                    <span
+                      className={`w-6 text-xs text-center font-medium ${
+                        checkedItems[item.id]
+                          ? "text-gray-400"
+                          : "text-gray-800"
+                      }`}
+                    >
+                      {quantities[item.id] || 1}
+                    </span>
+                    <button
+                      onClick={() =>
+                        handleQtyChange(
+                          item.id,
+                          (parseInt(quantities[item.id]) || 1) + 1,
+                        )
+                      }
+                      disabled={!!checkedItems[item.id]}
+                      className={`w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
+                        checkedItems[item.id]
+                          ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                          : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                      }`}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
