@@ -4,6 +4,7 @@ function ItemList({ items, setItems, setEditingItem }) {
   const [search, setSearch] = useState('')
   const [perPage, setPerPage] = useState(10)
   const [page, setPage] = useState(1)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const formatRupiah = (number) => {
     return 'Rp ' + number.toLocaleString('id-ID')
@@ -11,7 +12,13 @@ function ItemList({ items, setItems, setEditingItem }) {
 
   const handleDelete = (id) => {
     setItems(items.filter(item => item.id !== id))
+    setConfirmDeleteId(null)
     setPage(1)
+  }
+
+  const handleEditClick = (item) => {
+    setEditingItem(item)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const sorted = [...items].sort((a, b) => a.name.localeCompare(b.name))
@@ -60,28 +67,48 @@ function ItemList({ items, setItems, setEditingItem }) {
       ) : (
         <div className="space-y-2">
           {paginated.map(item => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-            >
-              <div>
-                <p className="text-sm font-medium text-gray-800">{item.name}</p>
-                <p className="text-xs text-green-600">{formatRupiah(item.price)}</p>
+            <div key={item.id}>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                  <p className="text-xs text-green-600">{formatRupiah(item.price)}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditClick(item)}
+                    className="text-xs text-blue-400 hover:text-blue-600 transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(item.id)}
+                    className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    Hapus
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditingItem(item)}
-                  className="text-xs text-blue-400 hover:text-blue-600 transition-colors"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                >
-                  Hapus
-                </button>
-              </div>
+
+              {/* Konfirmasi hapus */}
+              {confirmDeleteId === item.id && (
+                <div className="flex items-center justify-between px-3 py-2 bg-red-50 rounded-lg border border-red-100 mt-1">
+                  <p className="text-xs text-red-500">Yakin mau hapus <span className="font-semibold">{item.name}</span>?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg transition-colors"
+                    >
+                      Hapus
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-600 px-2 py-1 rounded-lg transition-colors"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

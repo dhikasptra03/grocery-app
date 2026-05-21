@@ -1,4 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
+
+const formatRupiah = (value) => {
+  const number = String(value).replace(/\D/g, '')
+  return number.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
 
 function ItemForm({ items, setItems, editingItem, setEditingItem }) {
   const [name, setName] = useState(editingItem?.name ?? '')
@@ -6,26 +11,9 @@ function ItemForm({ items, setItems, editingItem, setEditingItem }) {
   const [suggestion, setSuggestion] = useState('')
   const inputRef = useRef(null)
 
-  const formatRupiah = (value) => {
-    const number = value.replace(/\D/g, '')
-    return number.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  }
-
-  useEffect(() => {
-  if (editingItem) {
-    setName(editingItem.name)
-    setPrice(formatRupiah(String(editingItem.price)))
-    } else {
-      setName('')
-      setPrice('')
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingItem?.id])
-
   const handleNameChange = (e) => {
     const value = e.target.value
     setName(value)
-
     if (value.trim()) {
       const match = items.find(
         item =>
