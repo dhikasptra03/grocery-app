@@ -11,7 +11,7 @@ function ShoppingSession({ items }) {
   const [actualPrices, setActualPrices] = useState({});
 
   const formatRupiah = (number) => {
-    return "Rp " + number.toLocaleString("id-ID");
+    return "Rp" + number.toLocaleString("id-ID");
   };
 
   const formatDate = (dateString) => {
@@ -373,12 +373,12 @@ function ShoppingSession({ items }) {
                         {session.cart.map((cartItem) => (
                           <div
                             key={cartItem.id}
-                            className="flex justify-between text-xs text-gray-600"
+                            className="flex justify-between text-xs text-gray-600 gap-2"
                           >
-                            <span>
+                            <span className="flex-1">
                               {cartItem.name}
                               <p className="text-gray-400">
-                                {cartItem.qty}x
+                                {cartItem.qty} x {" "}
                                 {(
                                   cartItem.actualPrice ?? cartItem.price
                                 ).toLocaleString("id-ID")}
@@ -390,16 +390,50 @@ function ShoppingSession({ items }) {
                                   )}
                               </p>
                             </span>
-                            <span className="text-green-600">
+                            <span className="text-green-600 text-right whitespace-nowrap tabular-nums">
                               {formatRupiah(cartItem.subtotal)}
                             </span>
                           </div>
                         ))}
-                        <div className="flex justify-between text-xs font-semibold text-gray-800 border-t border-gray-200 pt-1 mt-1">
-                          <span>Total</span>
-                          <span className="text-green-600">
-                            {formatRupiah(session.total)}
-                          </span>
+                        <div className="border-t border-gray-200 pt-1 mt-1 space-y-1">
+                          {(() => {
+                            const totalDiscount = session.cart.reduce(
+                              (sum, c) => {
+                                if (
+                                  c.actualPrice &&
+                                  c.actualPrice !== c.price
+                                ) {
+                                  return (
+                                    sum + (c.price - c.actualPrice) * c.qty
+                                  );
+                                }
+                                return sum;
+                              },
+                              0,
+                            );
+                            const subtotal = session.cart.reduce(
+                              (sum, c) => sum + c.price * c.qty,
+                              0,
+                            );
+                            return (
+                              <>
+                                <div className="flex justify-between text-xs text-gray-600">
+                                  <span>Subtotal</span>
+                                  <span className="tabular-nums whitespace-nowrap">{formatRupiah(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-gray-600">
+                                  <span>Discounts</span>
+                                  <span className="tabular-nums whitespace-nowrap">{formatRupiah(totalDiscount)}</span>
+                                </div>
+                                <div className="flex justify-between text-xs font-semibold text-gray-800 border-t border-gray-200 pt-1">
+                                  <span>Grand Total</span>
+                                  <span className="tabular-nums whitespace-nowrap text-green-600">
+                                    {formatRupiah(session.total)}
+                                  </span>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
