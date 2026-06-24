@@ -1,25 +1,26 @@
-import { useState } from "react"
-import useLocalStorage from "../hooks/useLocalStorage"
+import { useState } from "react";
+import useLocalStorage from "../hooks/useLocalStorage";
 
 function ShoppingSession({ items }) {
-  const [sessions, setSessions] = useLocalStorage("shopping-sessions", [])
-  const [activeSession, setActiveSession] = useState(null)
-  const [quantities, setQuantities] = useState({})
-  const [checkedItems, setCheckedItems] = useState({})
-  const [search, setSearch] = useState("")
-  const [expandedId, setExpandedId] = useState(null)
+  const [sessions, setSessions] = useLocalStorage("shopping-sessions", []);
+  const [activeSession, setActiveSession] = useState(null);
+  const [quantities, setQuantities] = useState({});
+  const [checkedItems, setCheckedItems] = useState({});
+  const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
+  const [actualPrices, setActualPrices] = useState({});
 
   const formatRupiah = (number) => {
-    return "Rp " + number.toLocaleString("id-ID")
-  }
+    return "Rp " + number.toLocaleString("id-ID");
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   const startNewSession = () => {
     const newSession = {
@@ -28,85 +29,87 @@ function ShoppingSession({ items }) {
       cart: [],
       total: 0,
       finished: false,
-    }
-    setSessions([newSession, ...sessions])
-    setActiveSession(newSession)
-    setQuantities({})
-    setCheckedItems({})
-    setSearch("")
-  }
+    };
+    setSessions([newSession, ...sessions]);
+    setActiveSession(newSession);
+    setQuantities({});
+    setCheckedItems({});
+    setSearch("");
+  };
 
   const handleCheck = (item) => {
-    if (activeSession.finished) return
-    const qty = parseInt(quantities[item.id]) || 1
-    const alreadyChecked = checkedItems[item.id]
+    if (activeSession.finished) return;
+    const qty = parseInt(quantities[item.id]) || 1;
+    const actualPrice = parseInt(actualPrices[item.id] || item.price);
+    const alreadyChecked = checkedItems[item.id];
 
     if (alreadyChecked) {
-      const newChecked = { ...checkedItems }
-      delete newChecked[item.id]
-      setCheckedItems(newChecked)
-      const newCart = activeSession.cart.filter((c) => c.id !== item.id)
-      const newTotal = newCart.reduce((sum, c) => sum + c.subtotal, 0)
-      const updated = { ...activeSession, cart: newCart, total: newTotal }
-      setActiveSession(updated)
-      setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)))
+      const newChecked = { ...checkedItems };
+      delete newChecked[item.id];
+      setCheckedItems(newChecked);
+      const newCart = activeSession.cart.filter((c) => c.id !== item.id);
+      const newTotal = newCart.reduce((sum, c) => sum + c.subtotal, 0);
+      const updated = { ...activeSession, cart: newCart, total: newTotal };
+      setActiveSession(updated);
+      setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)));
     } else {
-      setCheckedItems({ ...checkedItems, [item.id]: true })
+      setCheckedItems({ ...checkedItems, [item.id]: true });
       const cartItem = {
         id: item.id,
         name: item.name,
         price: item.price,
+        actualPrice,
         qty,
-        subtotal: item.price * qty,
-      }
+        subtotal: actualPrice * qty,
+      };
       const newCart = [
         ...activeSession.cart.filter((c) => c.id !== item.id),
         cartItem,
-      ]
-      const newTotal = newCart.reduce((sum, c) => sum + c.subtotal, 0)
-      const updated = { ...activeSession, cart: newCart, total: newTotal }
-      setActiveSession(updated)
-      setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)))
+      ];
+      const newTotal = newCart.reduce((sum, c) => sum + c.subtotal, 0);
+      const updated = { ...activeSession, cart: newCart, total: newTotal };
+      setActiveSession(updated);
+      setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)));
     }
-  }
+  };
 
   const handleQtyChange = (itemId, value) => {
-    if (checkedItems[itemId]) return
-    setQuantities({ ...quantities, [itemId]: value })
-  }
+    if (checkedItems[itemId]) return;
+    setQuantities({ ...quantities, [itemId]: value });
+  };
 
   const saveSession = (finished) => {
-    const updated = { ...activeSession, finished }
-    setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)))
-    setActiveSession(null)
-    setQuantities({})
-    setCheckedItems({})
-    setSearch("")
-  }
+    const updated = { ...activeSession, finished };
+    setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)));
+    setActiveSession(null);
+    setQuantities({});
+    setCheckedItems({});
+    setSearch("");
+  };
 
   const resumeSession = (session) => {
-    if (session.finished) return
-    const restoredChecked = {}
+    if (session.finished) return;
+    const restoredChecked = {};
     session.cart.forEach((c) => {
-      restoredChecked[c.id] = true
-    })
-    const restoredQty = {}
+      restoredChecked[c.id] = true;
+    });
+    const restoredQty = {};
     session.cart.forEach((c) => {
-      restoredQty[c.id] = c.qty
-    })
-    setActiveSession(session)
-    setCheckedItems(restoredChecked)
-    setQuantities(restoredQty)
-    setSearch("")
-  }
+      restoredQty[c.id] = c.qty;
+    });
+    setActiveSession(session);
+    setCheckedItems(restoredChecked);
+    setQuantities(restoredQty);
+    setSearch("");
+  };
 
   const deleteSession = (id) => {
-    setSessions(sessions.filter((s) => s.id !== id))
-  }
+    setSessions(sessions.filter((s) => s.id !== id));
+  };
 
   const filteredItems = [...items]
     .sort((a, b) => a.name.localeCompare(b.name))
-    .filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
+    .filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
 
   if (activeSession) {
     return (
@@ -146,75 +149,104 @@ function ShoppingSession({ items }) {
               {filteredItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                  className={`flex flex-col p-3 rounded-lg border transition-all ${
                     checkedItems[item.id]
                       ? "bg-green-50 border-green-200"
                       : "bg-gray-50 border-transparent"
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={!!checkedItems[item.id]}
-                    onChange={() => handleCheck(item)}
-                    className="w-4 h-4 accent-green-500"
-                  />
-                  <div className="flex-1">
-                    <p
-                      className={`text-sm font-medium ${
-                        checkedItems[item.id]
-                          ? "line-through text-gray-400"
-                          : "text-gray-800"
-                      }`}
-                    >
-                      {item.name}
-                    </p>
-                    <p className="text-xs text-green-600">
-                      {formatRupiah(item.price)}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={!!checkedItems[item.id]}
+                      onChange={() => handleCheck(item)}
+                      className="w-4 h-4 accent-green-500"
+                    />
+                    <div className="flex-1">
+                      <p
+                        className={`text-sm font-medium ${
+                          checkedItems[item.id]
+                            ? "line-through text-gray-400"
+                            : "text-gray-800"
+                        }`}
+                      >
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Harga normal: {formatRupiah(item.price)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() =>
+                          handleQtyChange(
+                            item.id,
+                            Math.max(
+                              1,
+                              (parseInt(quantities[item.id]) || 1) - 1,
+                            ),
+                          )
+                        }
+                        disabled={!!checkedItems[item.id]}
+                        className={`w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
+                          checkedItems[item.id]
+                            ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                            : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                        }`}
+                      >
+                        −
+                      </button>
+                      <span
+                        className={`w-6 text-xs text-center font-medium ${
+                          checkedItems[item.id]
+                            ? "text-gray-400"
+                            : "text-gray-800"
+                        }`}
+                      >
+                        {quantities[item.id] || 1}
+                      </span>
+                      <button
+                        onClick={() =>
+                          handleQtyChange(
+                            item.id,
+                            (parseInt(quantities[item.id]) || 1) + 1,
+                          )
+                        }
+                        disabled={!!checkedItems[item.id]}
+                        className={`w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
+                          checkedItems[item.id]
+                            ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                            : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                        }`}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() =>
-                        handleQtyChange(
-                          item.id,
-                          Math.max(1, (parseInt(quantities[item.id]) || 1) - 1),
-                        )
-                      }
-                      disabled={!!checkedItems[item.id]}
-                      className={`w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
-                        checkedItems[item.id]
-                          ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                          : "bg-gray-200 hover:bg-gray-300 text-gray-600"
-                      }`}
-                    >
-                      −
-                    </button>
-                    <span
-                      className={`w-6 text-xs text-center font-medium ${
-                        checkedItems[item.id]
-                          ? "text-gray-400"
-                          : "text-gray-800"
-                      }`}
-                    >
-                      {quantities[item.id] || 1}
-                    </span>
-                    <button
-                      onClick={() =>
-                        handleQtyChange(
-                          item.id,
-                          (parseInt(quantities[item.id]) || 1) + 1,
-                        )
-                      }
-                      disabled={!!checkedItems[item.id]}
-                      className={`w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
-                        checkedItems[item.id]
-                          ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                          : "bg-gray-200 hover:bg-gray-300 text-gray-600"
-                      }`}
-                    >
-                      +
-                    </button>
-                  </div>
+
+                  {/* Harga aktual - muncul kalau belum dicheck */}
+                  {!checkedItems[item.id] && (
+                    <div className="flex items-center gap-2 mt-2 ml-7">
+                      <span className="text-xs text-gray-400">
+                        Harga aktual:
+                      </span>
+                      <div className="flex items-center border border-gray-200 rounded-lg px-2 py-1 flex-1 focus-within:ring-2 focus-within:ring-green-400">
+                        <span className="text-xs text-gray-400 mr-1">Rp</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={actualPrices[item.id] ?? item.price}
+                          onChange={(e) => {
+                            setActualPrices({
+                              ...actualPrices,
+                              [item.id]: e.target.value,
+                            });
+                          }}
+                          className="flex-1 text-xs focus:outline-none bg-transparent"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -250,7 +282,7 @@ function ShoppingSession({ items }) {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -344,10 +376,19 @@ function ShoppingSession({ items }) {
                             className="flex justify-between text-xs text-gray-600"
                           >
                             <span>
-                              {cartItem.name}{" "}
-                              <span className="text-gray-400">
-                                x{cartItem.qty}
-                              </span>
+                              {cartItem.name}
+                              <p className="text-gray-400">
+                                {cartItem.qty}x
+                                {(
+                                  cartItem.actualPrice ?? cartItem.price
+                                ).toLocaleString("id-ID")}
+                                {cartItem.actualPrice &&
+                                  cartItem.actualPrice !== cartItem.price && (
+                                    <span className="text-red-400 ml-1 line-through">
+                                      ({cartItem.price.toLocaleString("id-ID")})
+                                    </span>
+                                  )}
+                              </p>
                             </span>
                             <span className="text-green-600">
                               {formatRupiah(cartItem.subtotal)}
@@ -370,7 +411,7 @@ function ShoppingSession({ items }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default ShoppingSession
+export default ShoppingSession;
