@@ -104,7 +104,9 @@ function ShoppingSession({
           actualPrice: cartItem.actualPrice ?? cartItem.price,
         };
         if (!newHistory[cartItem.id]) newHistory[cartItem.id] = [];
-        newHistory[cartItem.id] = [...newHistory[cartItem.id], entry];
+        newHistory[cartItem.id] = [...newHistory[cartItem.id], entry].sort(
+          (a, b) => new Date(a.date) - new Date(b.date),
+        ); // ← sort by date
       });
       setPriceHistory(newHistory);
 
@@ -114,12 +116,15 @@ function ShoppingSession({
         const editedNormal = normalPrices[item.id];
         if (editedNormal && editedNormal !== item.price) {
           const entry = {
-            date: new Date().toISOString(),
+            date: activeSession.date, // ← pakai tanggal sesi, bukan hari ini
             oldPrice: item.price,
             newPrice: editedNormal,
           };
           if (!newNormalHistory[item.id]) newNormalHistory[item.id] = [];
-          newNormalHistory[item.id] = [...newNormalHistory[item.id], entry];
+          newNormalHistory[item.id] = [
+            ...newNormalHistory[item.id],
+            entry,
+          ].sort((a, b) => new Date(a.date) - new Date(b.date)); // ← sort by date
           return { ...item, price: editedNormal };
         }
         return item;
