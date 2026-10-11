@@ -1,14 +1,26 @@
 import { useState } from "react";
 import useLocalStorage from "../hooks/useLocalStorage";
 
-function ShoppingSession({ items }) {
-  const [sessions, setSessions] = useLocalStorage("shopping-sessions", []);
+function ShoppingSession({
+  items,
+  setItems,
+  sessions,
+  setSessions,
+  priceHistory,
+  setPriceHistory,
+  priceNormalHistory,
+  setPriceNormalHistory,
+}) {
   const [activeSession, setActiveSession] = useState(null);
   const [quantities, setQuantities] = useState({});
   const [checkedItems, setCheckedItems] = useState({});
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [normalPrices, setNormalPrices] = useState({});
   const [actualPrices, setActualPrices] = useState({});
+  const [sessionDate, setSessionDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
 
   const formatRupiah = (number) => {
     return "Rp" + number.toLocaleString("id-ID");
@@ -25,7 +37,7 @@ function ShoppingSession({ items }) {
   const startNewSession = () => {
     const newSession = {
       id: Date.now(),
-      date: new Date().toISOString(),
+      date: new Date(sessionDate).toISOString(),
       cart: [],
       total: 0,
       finished: false,
@@ -81,9 +93,45 @@ function ShoppingSession({ items }) {
   const saveSession = (finished) => {
     const updated = { ...activeSession, finished };
     setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)));
+
+    if (finished) {
+      // Simpan price history (harga bayar)
+      const newHistory = { ...priceHistory };
+      activeSession.cart.forEach((cartItem) => {
+        const entry = {
+          date: activeSession.date,
+          price: cartItem.price,
+          actualPrice: cartItem.actualPrice ?? cartItem.price,
+        };
+        if (!newHistory[cartItem.id]) newHistory[cartItem.id] = [];
+        newHistory[cartItem.id] = [...newHistory[cartItem.id], entry];
+      });
+      setPriceHistory(newHistory);
+
+      // Update harga normal kalau ada yang diubah
+      const newNormalHistory = { ...priceNormalHistory };
+      const updatedItems = items.map((item) => {
+        const editedNormal = normalPrices[item.id];
+        if (editedNormal && editedNormal !== item.price) {
+          const entry = {
+            date: new Date().toISOString(),
+            oldPrice: item.price,
+            newPrice: editedNormal,
+          };
+          if (!newNormalHistory[item.id]) newNormalHistory[item.id] = [];
+          newNormalHistory[item.id] = [...newNormalHistory[item.id], entry];
+          return { ...item, price: editedNormal };
+        }
+        return item;
+      });
+      setPriceNormalHistory(newNormalHistory);
+      setItems(updatedItems);
+    }
+
     setActiveSession(null);
     setQuantities({});
     setCheckedItems({});
+    setNormalPrices({});
     setSearch("");
   };
 
@@ -172,9 +220,6 @@ function ShoppingSession({ items }) {
                       >
                         {item.name}
                       </p>
-                      <p className="text-xs text-gray-400">
-                        Harga normal: {formatRupiah(item.price)}
-                      </p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
@@ -224,26 +269,48 @@ function ShoppingSession({ items }) {
                     </div>
                   </div>
 
-                  {/* Harga aktual - muncul kalau belum dicheck */}
+                  {/* Harga normal & aktual - muncul kalau belum dicheck */}
                   {!checkedItems[item.id] && (
-                    <div className="flex items-center gap-2 mt-2 ml-7">
-                      <span className="text-xs text-gray-400">
-                        Harga aktual:
-                      </span>
-                      <div className="flex items-center border border-gray-200 rounded-lg px-2 py-1 flex-1 focus-within:ring-2 focus-within:ring-green-400">
-                        <span className="text-xs text-gray-400 mr-1">Rp</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={actualPrices[item.id] ?? item.price}
-                          onChange={(e) => {
-                            setActualPrices({
-                              ...actualPrices,
-                              [item.id]: e.target.value,
-                            });
-                          }}
-                          className="flex-1 text-xs focus:outline-none bg-transparent"
-                        />
+                    <div className="ml-7 mt-2 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400 w-20">
+                          Harga normal:
+                        </span>
+                        <div className="flex items-center border border-gray-200 rounded-lg px-2 py-1 flex-1 focus-within:ring-2 focus-within:ring-blue-400">
+                          <span className="text-xs text-gray-400 mr-1">Rp</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={normalPrices[item.id] ?? item.price}
+                            onChange={(e) =>
+                              setNormalPrices({
+                                ...normalPrices,
+                                [item.id]: parseInt(e.target.value) || 0,
+                              })
+                            }
+                            className="flex-1 text-xs focus:outline-none bg-transparent"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400 w-20">
+                          Harga aktual:
+                        </span>
+                        <div className="flex items-center border border-gray-200 rounded-lg px-2 py-1 flex-1 focus-within:ring-2 focus-within:ring-green-400">
+                          <span className="text-xs text-gray-400 mr-1">Rp</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={actualPrices[item.id] ?? item.price}
+                            onChange={(e) =>
+                              setActualPrices({
+                                ...actualPrices,
+                                [item.id]: e.target.value,
+                              })
+                            }
+                            className="flex-1 text-xs focus:outline-none bg-transparent"
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -287,12 +354,28 @@ function ShoppingSession({ items }) {
 
   return (
     <div className="space-y-4">
-      <button
-        onClick={startNewSession}
-        className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 rounded-xl shadow-sm transition-colors"
-      >
-        + Mulai Sesi Belanja
-      </button>
+      <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-700">
+          🛍️ Pilih Waktu Belanja
+        </h2>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400 whitespace-nowrap">
+            Tanggal belanja:
+          </span>
+          <input
+            type="date"
+            value={sessionDate}
+            onChange={(e) => setSessionDate(e.target.value)}
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+          />
+        </div>
+        <button
+          onClick={startNewSession}
+          className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 rounded-xl transition-colors"
+        >
+          + Mulai Sesi Belanja
+        </button>
+      </div>
 
       {sessions.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-6 text-center">
@@ -378,7 +461,7 @@ function ShoppingSession({ items }) {
                             <span className="flex-1">
                               {cartItem.name}
                               <p className="text-gray-400">
-                                {cartItem.qty} x {" "}
+                                {cartItem.qty} x{" "}
                                 {(
                                   cartItem.actualPrice ?? cartItem.price
                                 ).toLocaleString("id-ID")}
@@ -419,11 +502,15 @@ function ShoppingSession({ items }) {
                               <>
                                 <div className="flex justify-between text-xs text-gray-600">
                                   <span>Subtotal</span>
-                                  <span className="tabular-nums whitespace-nowrap">{formatRupiah(subtotal)}</span>
+                                  <span className="tabular-nums whitespace-nowrap">
+                                    {formatRupiah(subtotal)}
+                                  </span>
                                 </div>
                                 <div className="flex justify-between text-xs text-gray-600">
                                   <span>Discounts</span>
-                                  <span className="tabular-nums whitespace-nowrap">{formatRupiah(totalDiscount)}</span>
+                                  <span className="tabular-nums whitespace-nowrap">
+                                    {formatRupiah(totalDiscount)}
+                                  </span>
                                 </div>
                                 <div className="flex justify-between text-xs font-semibold text-gray-800 border-t border-gray-200 pt-1">
                                   <span>Grand Total</span>
