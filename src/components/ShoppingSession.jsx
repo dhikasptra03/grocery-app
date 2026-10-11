@@ -6,8 +6,6 @@ function ShoppingSession({
   setItems,
   sessions,
   setSessions,
-  priceHistory,
-  setPriceHistory,
   priceNormalHistory,
   setPriceNormalHistory,
 }) {
@@ -69,7 +67,7 @@ function ShoppingSession({
       const cartItem = {
         id: item.id,
         name: item.name,
-        price: item.price,
+        price: normalPrices[item.id] ?? item.price, // ← harga normal sesi ini
         actualPrice,
         qty,
         subtotal: actualPrice * qty,
@@ -95,28 +93,12 @@ function ShoppingSession({
     setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)));
 
     if (finished) {
-      // Simpan price history (harga bayar)
-      const newHistory = { ...priceHistory };
-      activeSession.cart.forEach((cartItem) => {
-        const entry = {
-          date: activeSession.date,
-          price: cartItem.price,
-          actualPrice: cartItem.actualPrice ?? cartItem.price,
-        };
-        if (!newHistory[cartItem.id]) newHistory[cartItem.id] = [];
-        newHistory[cartItem.id] = [...newHistory[cartItem.id], entry].sort(
-          (a, b) => new Date(a.date) - new Date(b.date),
-        ); // ← sort by date
-      });
-      setPriceHistory(newHistory);
-
-      // Update harga normal kalau ada yang diubah
       const newNormalHistory = { ...priceNormalHistory };
       const updatedItems = items.map((item) => {
         const editedNormal = normalPrices[item.id];
         if (editedNormal && editedNormal !== item.price) {
           const entry = {
-            date: activeSession.date, // ← pakai tanggal sesi, bukan hari ini
+            date: activeSession.date,
             oldPrice: item.price,
             newPrice: editedNormal,
           };
@@ -124,7 +106,7 @@ function ShoppingSession({
           newNormalHistory[item.id] = [
             ...newNormalHistory[item.id],
             entry,
-          ].sort((a, b) => new Date(a.date) - new Date(b.date)); // ← sort by date
+          ].sort((a, b) => new Date(a.date) - new Date(b.date));
           return { ...item, price: editedNormal };
         }
         return item;
@@ -137,6 +119,7 @@ function ShoppingSession({
     setQuantities({});
     setCheckedItems({});
     setNormalPrices({});
+    setActualPrices({});
     setSearch("");
   };
 

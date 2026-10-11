@@ -3,7 +3,6 @@ import useLocalStorage from "./hooks/useLocalStorage";
 import ItemForm from "./components/ItemForm";
 import ItemList from "./components/ItemList";
 import ShoppingSession from "./components/ShoppingSession";
-import PriceHistory from "./components/PriceHistory";
 
 function App() {
   const [items, setItems] = useLocalStorage("grocery-items", []);
@@ -127,15 +126,9 @@ function App() {
             setItems={setItems}
             sessions={sessions}
             setSessions={setSessions}
-            priceHistory={priceHistory}
-            setPriceHistory={setPriceHistory}
             priceNormalHistory={priceNormalHistory}
             setPriceNormalHistory={setPriceNormalHistory}
           />
-        )}
-
-        {activeTab === "history" && (
-          <PriceHistory items={items} priceHistory={priceHistory} />
         )}
       </div>
     </div>
